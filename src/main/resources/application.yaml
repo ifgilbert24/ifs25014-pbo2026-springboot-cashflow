@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: ifs25014-pbo2026-springboot-cashflow
+
+server:
+  port: ${APP_PORT:8080}
+
+vaadin:
+  launch-browser: false
+
