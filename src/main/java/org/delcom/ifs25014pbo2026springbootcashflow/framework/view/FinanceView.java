@@ -89,24 +89,25 @@ public class FinanceView extends VerticalLayout {
     @Override
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
-        UI ui = attachEvent.getUI();
-        if (ui != null) {
-            ui.setLocale(Locale.forLanguageTag("id-ID"));
-            ui.getPage().executeJs("""
-                    document.documentElement.setAttribute('lang', 'id');
-                    const outlet = document.getElementById('outlet');
-                    if (outlet && !outlet.hasAttribute('role')) {
-                        outlet.setAttribute('role', 'main');
-                        outlet.setAttribute('aria-label', 'Konten Utama Aplikasi Cashflow');
+        getUI().ifPresent(this::applyAccessibilityEnhancements);
+    }
+
+    void applyAccessibilityEnhancements(UI ui) {
+        ui.setLocale(Locale.forLanguageTag("id-ID"));
+        ui.getPage().executeJs("""
+                document.documentElement.setAttribute('lang', 'id');
+                const outlet = document.getElementById('outlet');
+                if (outlet && !outlet.hasAttribute('role')) {
+                    outlet.setAttribute('role', 'main');
+                    outlet.setAttribute('aria-label', 'Konten Utama Aplikasi Cashflow');
+                }
+                document.querySelectorAll('body > *:not(main):not(#outlet):not(script):not(style):not(link)').forEach(el => {
+                    if (!el.hasAttribute('role')) {
+                        el.setAttribute('role', 'region');
+                        el.setAttribute('aria-label', 'Status Sistem Aplikasi');
                     }
-                    document.querySelectorAll('body > *:not(main):not(#outlet):not(script):not(style):not(link)').forEach(el => {
-                        if (!el.hasAttribute('role')) {
-                            el.setAttribute('role', 'region');
-                            el.setAttribute('aria-label', 'Status Sistem Aplikasi');
-                        }
-                    });
-                    """);
-        }
+                });
+                """);
     }
 
     private Header buildHeader() {

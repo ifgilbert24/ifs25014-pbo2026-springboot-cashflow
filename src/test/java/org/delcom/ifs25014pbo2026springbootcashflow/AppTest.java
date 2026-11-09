@@ -255,11 +255,20 @@ class AppTest {
         FinanceView view = new FinanceView(useCase, presenter);
         assertNotNull(view);
 
-        // Exercise onAttach
+        // Exercise onAttach (when component is detached from UI, getUI() is empty and safe)
         Method onAttach = FinanceView.class.getDeclaredMethod("onAttach", AttachEvent.class);
         onAttach.setAccessible(true);
         AttachEvent attachEvent = new AttachEvent(view, true);
         onAttach.invoke(view, attachEvent);
+
+        // Exercise applyAccessibilityEnhancements with mocked UI & Page
+        Method applyA11y = FinanceView.class.getDeclaredMethod("applyAccessibilityEnhancements", UI.class);
+        applyA11y.setAccessible(true);
+        UI mockUi = mock(UI.class);
+        Page mockPage = mock(Page.class);
+        when(mockUi.getPage()).thenReturn(mockPage);
+        applyA11y.invoke(view, mockUi);
+        verify(mockPage).executeJs(anyString());
 
         Transaction t1 = useCase.addIncome("Gaji Bulanan", 5_000_000);
         Transaction t2 = useCase.addExpense("Makan Siang", 25_000);
