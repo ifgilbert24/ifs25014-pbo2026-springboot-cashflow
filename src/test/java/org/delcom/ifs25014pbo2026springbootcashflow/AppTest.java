@@ -6,24 +6,26 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.page.Page;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.server.AppShellSettings;
+import com.vaadin.flow.server.ServiceInitEvent;
+import com.vaadin.flow.server.communication.IndexHtmlRequestListener;
+import com.vaadin.flow.server.communication.IndexHtmlResponse;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -41,6 +43,8 @@ import org.delcom.ifs25014pbo2026springbootcashflow.domain.exception.ValidationE
 import org.delcom.ifs25014pbo2026springbootcashflow.domain.repository.ITransactionRepository;
 import org.delcom.ifs25014pbo2026springbootcashflow.framework.view.FinanceView;
 import org.delcom.ifs25014pbo2026springbootcashflow.usecase.FinanceUseCase;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
@@ -65,6 +69,18 @@ class AppTest {
         AppShellSettings settings = mock(AppShellSettings.class);
         app.configurePage(settings);
         verify(settings).setPageTitle("Cashflow: Catatan Keuangan");
+
+        ServiceInitEvent serviceInitEvent = mock(ServiceInitEvent.class);
+        app.serviceInit(serviceInitEvent);
+        verify(serviceInitEvent).addIndexHtmlRequestListener(any(IndexHtmlRequestListener.class));
+
+        Document doc = Jsoup.parse("<!doctype html><html lang=\"en\"><body><div id=\"outlet\"></div></body></html>");
+        IndexHtmlResponse response = mock(IndexHtmlResponse.class);
+        when(response.getDocument()).thenReturn(doc);
+        App.customizeIndexHtml(response);
+        assertEquals("id", doc.selectFirst("html").attr("lang"));
+        assertEquals("main", doc.getElementById("outlet").tagName());
+        assertEquals("main", doc.getElementById("outlet").attr("role"));
     }
 
     @Test
@@ -239,12 +255,9 @@ class AppTest {
         FinanceView view = new FinanceView(useCase, presenter);
         assertNotNull(view);
 
-        // Exercise onAttach with mocked UI & Page
+        // Exercise onAttach
         Method onAttach = FinanceView.class.getDeclaredMethod("onAttach", AttachEvent.class);
         onAttach.setAccessible(true);
-        UI mockUi = mock(UI.class);
-        Page mockPage = mock(Page.class);
-        org.mockito.Mockito.when(mockUi.getPage()).thenReturn(mockPage);
         AttachEvent attachEvent = new AttachEvent(view, true);
         onAttach.invoke(view, attachEvent);
 

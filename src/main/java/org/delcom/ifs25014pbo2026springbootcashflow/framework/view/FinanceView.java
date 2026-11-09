@@ -12,7 +12,6 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Header;
-import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Section;
 import com.vaadin.flow.component.html.Span;
@@ -40,8 +39,10 @@ import org.delcom.ifs25014pbo2026springbootcashflow.usecase.FinanceUseCase;
  * Tampilan web Vaadin untuk aplikasi Catatan Keuangan (Cashflow).
  *
  * <p>Dirancang dengan gaya minimalis buku kas ala Linear, memenuhi standar aksesibilitas
- * WCAG AAA (kontras minimal 7:1), landmark semantik HTML5 ({@code header}, {@code main},
- * {@code section}), serta dukungan penuh navigasi keyboard.</p>
+ * WCAG AAA (kontras minimal 7:1), landmark semantik HTML5 (elemen {@code #outlet}
+ * dirender sebagai {@code <main role="main">} di {@code App.java} sehingga hanya ada
+ * tepat satu landmark {@code main} pada dokumen dan seluruh konten berada di dalamnya),
+ * serta dukungan penuh navigasi keyboard.</p>
  */
 @Route("")
 @PageTitle("Cashflow: Catatan Keuangan")
@@ -78,10 +79,10 @@ public class FinanceView extends VerticalLayout {
         configureToolbar();
 
         Header pageHeader = buildHeader();
-        Main mainContent = buildMainContent();
+        Div mainBody = buildMainBody();
 
-        add(pageHeader, mainContent);
-        setFlexGrow(1, mainContent);
+        add(pageHeader, mainBody);
+        setFlexGrow(1, mainBody);
         refreshAll();
     }
 
@@ -93,60 +94,17 @@ public class FinanceView extends VerticalLayout {
             ui.setLocale(Locale.forLanguageTag("id-ID"));
             ui.getPage().executeJs("""
                     document.documentElement.setAttribute('lang', 'id');
-                    if (!document.getElementById('cashflow-a11y-styles')) {
-                        const style = document.createElement('style');
-                        style.id = 'cashflow-a11y-styles';
-                        style.textContent = `
-                            :root {
-                                --lumo-primary-text-color: #1E40AF;
-                                --lumo-primary-color: #1E40AF;
-                                --lumo-success-text-color: #166534;
-                                --lumo-success-color: #15803D;
-                                --lumo-error-text-color: #991B1B;
-                                --lumo-error-color: #B91C1C;
-                                --lumo-body-text-color: #0F172A;
-                                --lumo-secondary-text-color: #334155;
-                                --lumo-tertiary-text-color: #475569;
-                                --lumo-contrast-60pct: #475569;
-                                --lumo-contrast-70pct: #334155;
-                                --lumo-contrast-80pct: #1E293B;
-                                --lumo-contrast-90pct: #0F172A;
-                            }
-                            a[href], button, summary, select, label[for],
-                            [role="button"], [role="link"], [role="tab"], [role="menuitem"],
-                            [role="option"], [role="switch"], vaadin-button, vaadin-combo-box {
-                                cursor: pointer;
-                            }
-                            :disabled, [aria-disabled="true"], vaadin-button[disabled] {
-                                cursor: not-allowed;
-                            }
-                            vaadin-button {
-                                min-height: 44px;
-                                font-weight: 600;
-                            }
-                            vaadin-text-field::part(input-field),
-                            vaadin-combo-box::part(input-field) {
-                                min-height: 44px;
-                                background-color: #FFFFFF;
-                                border: 1px solid #94A3B8;
-                            }
-                            vaadin-button:focus-visible,
-                            vaadin-text-field:focus-within,
-                            vaadin-combo-box:focus-within {
-                                outline: 2px solid #1E40AF;
-                                outline-offset: 2px;
-                            }
-                            @media (prefers-reduced-motion: reduce) {
-                                *, *::before, *::after {
-                                    animation-duration: 0.01ms !important;
-                                    animation-iteration-count: 1 !important;
-                                    transition-duration: 0.01ms !important;
-                                    scroll-behavior: auto !important;
-                                }
-                            }
-                        `;
-                        document.head.appendChild(style);
+                    const outlet = document.getElementById('outlet');
+                    if (outlet && !outlet.hasAttribute('role')) {
+                        outlet.setAttribute('role', 'main');
+                        outlet.setAttribute('aria-label', 'Konten Utama Aplikasi Cashflow');
                     }
+                    document.querySelectorAll('body > *:not(main):not(#outlet):not(script):not(style):not(link)').forEach(el => {
+                        if (!el.hasAttribute('role')) {
+                            el.setAttribute('role', 'region');
+                            el.setAttribute('aria-label', 'Status Sistem Aplikasi');
+                        }
+                    });
                     """);
         }
     }
@@ -177,7 +135,6 @@ public class FinanceView extends VerticalLayout {
                 .set("box-sizing", "border-box");
 
         Header header = new Header(container);
-        header.getElement().setAttribute("role", "banner");
         header.getStyle()
                 .set("width", "100%")
                 .set("background-color", "#FFFFFF")
@@ -185,7 +142,7 @@ public class FinanceView extends VerticalLayout {
         return header;
     }
 
-    private Main buildMainContent() {
+    private Div buildMainBody() {
         Section summarySection = new Section(buildSummaryCards());
         summarySection.getElement().setAttribute("aria-label", "Ringkasan Keuangan");
         summarySection.getStyle().set("width", "100%");
@@ -241,16 +198,15 @@ public class FinanceView extends VerticalLayout {
                 .set("padding", "1.25rem 1.5rem 2rem")
                 .set("box-sizing", "border-box");
 
-        Main main = new Main(container);
-        main.getElement().setAttribute("role", "main");
-        main.setId("main-content");
-        main.getStyle()
+        Div bodyWrapper = new Div(container);
+        bodyWrapper.setId("main-content");
+        bodyWrapper.getStyle()
                 .set("display", "flex")
                 .set("flex-direction", "column")
                 .set("flex", "1")
                 .set("width", "100%")
                 .set("overflow-y", "auto");
-        return main;
+        return bodyWrapper;
     }
 
     private HorizontalLayout buildSummaryCards() {
@@ -259,7 +215,7 @@ public class FinanceView extends VerticalLayout {
                 balanceLabel,
                 "#0F172A",
                 "#0F172A",
-                "#CBD5E1",
+                "#E2E8F0",
                 "#FFFFFF",
                 true
         );
@@ -394,7 +350,7 @@ public class FinanceView extends VerticalLayout {
         emptyState.getStyle()
                 .set("display", "block")
                 .set("padding", "1.5rem")
-                .set("color", "#334155")
+                .set("color", "#0F172A")
                 .set("font-weight", "500");
 
         grid.setEmptyStateComponent(emptyState);
@@ -416,7 +372,7 @@ public class FinanceView extends VerticalLayout {
                 .set("border-radius", "4px")
                 .set("font-size", "0.8rem")
                 .set("font-weight", "600")
-                .set("border", isIncome ? "1px solid #86EFAC" : "1px solid #FCA5A5")
+                .set("border", isIncome ? "1px solid #166534" : "1px solid #991B1B")
                 .set("background-color", isIncome ? "#DCFCE7" : "#FEE2E2")
                 .set("color", isIncome ? "#166534" : "#991B1B");
         return badge;
@@ -437,7 +393,7 @@ public class FinanceView extends VerticalLayout {
 
     private void configureToolbar() {
         searchField.setLabel("Cari Keterangan");
-        searchField.setPlaceholder("Ketik kata kunci transaksi...");
+        searchField.setPlaceholder("Ketik kata kunci...");
         searchField.setPrefixComponent(createDecorativeIcon(VaadinIcon.SEARCH));
         searchField.setClearButtonVisible(true);
         searchField.setAriaLabel("Cari keterangan transaksi");
@@ -470,7 +426,7 @@ public class FinanceView extends VerticalLayout {
         searchButton.getStyle()
                 .set("background-color", "#FFFFFF")
                 .set("color", "#0F172A")
-                .set("border", "1px solid #94A3B8");
+                .set("border", "1px solid #475569");
 
         Button refreshButton = new Button("Muat Ulang", createDecorativeIcon(VaadinIcon.REFRESH),
                 event -> refreshAll());
@@ -478,7 +434,7 @@ public class FinanceView extends VerticalLayout {
         refreshButton.getStyle()
                 .set("background-color", "#FFFFFF")
                 .set("color", "#0F172A")
-                .set("border", "1px solid #94A3B8");
+                .set("border", "1px solid #475569");
 
         Button addIncomeButton = new Button("Tambah Pemasukan", createDecorativeIcon(VaadinIcon.PLUS_CIRCLE),
                 event -> openAddDialog(TransactionType.INCOME));
