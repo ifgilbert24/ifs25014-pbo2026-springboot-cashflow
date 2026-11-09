@@ -14,7 +14,7 @@ import org.delcom.ifs25014pbo2026springbootcashflow.domain.repository.ITransacti
  * Orkestrasi logika bisnis untuk fitur Catatan Keuangan (Cashflow).
  *
  * <p>Kelas ini murni berisi aturan bisnis dan hanya bergantung pada port
- * {@link ITransactionRepository} di lapisan domain — tanpa ketergantungan pada I/O,
+ * {@link ITransactionRepository} di lapisan domain, tanpa ketergantungan pada I/O,
  * konsol, ataupun komponen UI.</p>
  */
 public class FinanceUseCase {
@@ -117,4 +117,3 @@ public class FinanceUseCase {
         }
     }
 }
-

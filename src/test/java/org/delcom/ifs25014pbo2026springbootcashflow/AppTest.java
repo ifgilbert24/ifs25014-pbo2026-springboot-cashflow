@@ -10,14 +10,20 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.page.Page;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.server.AppShellSettings;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -54,6 +60,11 @@ class AppTest {
         assertNotNull(context.getBean(ITransactionRepository.class));
         assertNotNull(context.getBean(FinanceUseCase.class));
         assertNotNull(context.getBean(FinancePresenter.class));
+
+        App app = new App();
+        AppShellSettings settings = mock(AppShellSettings.class);
+        app.configurePage(settings);
+        verify(settings).setPageTitle("Cashflow: Catatan Keuangan");
     }
 
     @Test
@@ -228,6 +239,15 @@ class AppTest {
         FinanceView view = new FinanceView(useCase, presenter);
         assertNotNull(view);
 
+        // Exercise onAttach with mocked UI & Page
+        Method onAttach = FinanceView.class.getDeclaredMethod("onAttach", AttachEvent.class);
+        onAttach.setAccessible(true);
+        UI mockUi = mock(UI.class);
+        Page mockPage = mock(Page.class);
+        org.mockito.Mockito.when(mockUi.getPage()).thenReturn(mockPage);
+        AttachEvent attachEvent = new AttachEvent(view, true);
+        onAttach.invoke(view, attachEvent);
+
         Transaction t1 = useCase.addIncome("Gaji Bulanan", 5_000_000);
         Transaction t2 = useCase.addExpense("Makan Siang", 25_000);
 
@@ -242,6 +262,10 @@ class AppTest {
         createActionButtons.setAccessible(true);
         HorizontalLayout actions = (HorizontalLayout) createActionButtons.invoke(view, t1);
         assertNotNull(actions);
+
+        Method parseAmountInput = FinanceView.class.getDeclaredMethod("parseAmountInput", String.class);
+        parseAmountInput.setAccessible(true);
+        assertEquals(50000.0, (double) parseAmountInput.invoke(view, " 50000 "));
 
         Method searchTransactions = FinanceView.class.getDeclaredMethod("searchTransactions");
         searchTransactions.setAccessible(true);
